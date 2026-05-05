@@ -1,0 +1,96 @@
+{
+  "vicsek_params": {
+    "n_agents": 150,
+    "Lx": 99.44857450176137,
+    "Ly": 55.93982315724077,
+    "speed": 11.76,
+    "eta_empirical": 0.26,
+    "eta_calibrated": 1.3,
+    "r_interaction": 7.0,
+    "r_repulsion": 1.5,
+    "dt": 0.04,
+    "n_steps": 2000,
+    "burn_in": 500
+  },
+  "pull_params": {
+    "n_agents": 150,
+    "Lx": 99.44857450176137,
+    "Ly": 55.93982315724077,
+    "speed": 11.76,
+    "eta_empirical": 0.26,
+    "eta_calibrated": 0.2,
+    "dt": 0.04,
+    "n_steps": 2000,
+    "burn_in": 500
+  },
+  "hybrid_params": {
+    "n_agents": 150,
+    "Lx": 99.44857450176137,
+    "Ly": 55.93982315724077,
+    "v_min": 2.7,
+    "v_max": 11.76,
+    "speed": 8.385663230346026,
+    "eta_base": 1.1000000000000003,
+    "lambda_pull": 0.8,
+    "alpha_aniso": 0.6,
+    "cone_half_angle": 1.0471975511965976,
+    "eta_empirical": 0.26,
+    "eta_calibrated": 1.1000000000000003,
+    "r_interaction": 7.0,
+    "r_repulsion": 1.5,
+    "dt": 0.04,
+    "n_steps": 2000,
+    "burn_in": 500
+  },
+  "field_targets": {
+    "polarization_mean": 0.8196,
+    "polarization_std": 0.0615,
+    "turning_angle_std": 0.276,
+    "nnd_median": 3.893,
+    "nnd_mean": 4.473
+  },
+  "vicsek_metrics": {
+    "polarization_mean": 0.8235226751239662,
+    "polarization_std": 0.050660405819338436,
+    "turning_angle_std": 0.5947353404093519,
+    "nnd_median": 2.6055509063882134,
+    "nnd_mean": 3.0218240091135886
+  },
+  "pull_metrics": {
+    "polarization_mean": 0.05819803121559264,
+    "polarization_std": 0.030297549339450735,
+    "turning_angle_std": 1.9990629561407725,
+    "nnd_median": 1.3241716967281547,
+    "nnd_mean": 1.3395213297532285
+  },
+  "hybrid_metrics": {
+    "polarization_mean": 0.8187250304042348,
+    "polarization_std": 0.047824978416841205,
+    "turning_angle_std": 0.8703039844504682,
+    "nnd_median": 1.7524440021384549,
+    "nnd_mean": 1.8502405845380245
+  },
+  "relative_errors": {
+    "vicsek": {
+      "polarization_mean_pct": 0.47860848267034617,
+      "turning_angle_std_pct": 115.4838189888956,
+      "nnd_median_pct": 33.07087319835053
+    },
+    "pull": {
+      "polarization_mean_pct": 92.89921532264609,
+      "turning_angle_std_pct": 624.2981725147725,
+      "nnd_median_pct": 65.98582849401092
+    },
+    "hybrid": {
+      "polarization_mean_pct": 0.106755685183646,
+      "turning_angle_std_pct": 215.3275305979957,
+      "nnd_median_pct": 54.98474178940521
+    }
+  },
+  "neighbor_map_anisotropy": {
+    "field": "anisotropic \u2014 forward void present",
+    "vicsek": "isotropic \u2014 no forward void",
+    "pull": "isotropic \u2014 symmetric ring, near-random motion",
+    "hybrid": "anisotropic \u2014 forward void present (eta=1.1, lambda=0.8, alpha=0.6); first model to reproduce field spatial structure"
+  }
+}

@@ -1,0 +1,34 @@
+# Weinburd 2024 dataset — request from original authors, do not redistribute
+/data/
+/locust_trajectory_data/
+
+# Third-party paper PDFs
+/papers/
+
+# Python cruft
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# OS / editor
+.DS_Store
+*~
+.vscode/
+
+# Claude config
+.claude/
+
+# Temp draft extracts
+draft_extracted.txt

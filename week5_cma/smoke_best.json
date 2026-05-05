@@ -1,0 +1,39 @@
+{
+  "run_name": "smoke",
+  "popsize": 8,
+  "sigma0": 2.5,
+  "max_gens": 3,
+  "n_seeds": 2,
+  "n_evals": 24,
+  "elapsed_sec": 13.26875638961792,
+  "best": {
+    "loss": 0.3398270043638255,
+    "params": {
+      "eta_base": 0.8147748113504574,
+      "lambda_pull": 0.6457050176323766,
+      "alpha_aniso": 0.22484061974531516,
+      "mu_responsiveness": 0.8075692738652701,
+      "k_pref": 0.5077836354705983,
+      "r_pref": 3.72713798511186
+    },
+    "metrics": {
+      "polarization_mean": 0.9628886186991064,
+      "polarization_std_across_seeds": 0.0020370390180374787,
+      "turning_angle_std": 0.2768665014967783,
+      "nnd_median": 4.201949469556769,
+      "nnd_mean": 4.38169754905141
+    }
+  },
+  "field": {
+    "polarization_mean": 0.8196,
+    "polarization_std": 0.0615,
+    "turning_angle_std": 0.276,
+    "nnd_median": 3.893,
+    "nnd_mean": 4.473
+  },
+  "loss_weights": {
+    "polarization": 1.0,
+    "turning_angle": 2.0,
+    "nnd": 2.0
+  }
+}

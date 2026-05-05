@@ -1,0 +1,39 @@
+{
+  "run_name": "equalw",
+  "popsize": 20,
+  "sigma0": 2.0,
+  "max_gens": 40,
+  "n_seeds": 5,
+  "n_evals": 800,
+  "elapsed_sec": 782.935378074646,
+  "best": {
+    "loss": 0.08616189190838107,
+    "params": {
+      "eta_base": 1.4690389893994853,
+      "lambda_pull": 0.23898431733989178,
+      "alpha_aniso": 0.9913815911866817,
+      "mu_responsiveness": 0.5049894270366371,
+      "k_pref": 0.297988970097136,
+      "r_pref": 3.707622370575091
+    },
+    "metrics": {
+      "polarization_mean": 0.883472609448788,
+      "polarization_std_across_seeds": 0.021272597092418247,
+      "turning_angle_std": 0.27650663839500883,
+      "nnd_median": 3.917894972187207,
+      "nnd_mean": 4.104340596350132
+    }
+  },
+  "field": {
+    "polarization_mean": 0.8196,
+    "polarization_std": 0.0615,
+    "turning_angle_std": 0.276,
+    "nnd_median": 3.893,
+    "nnd_mean": 4.473
+  },
+  "loss_weights": {
+    "polarization": 1.0,
+    "turning_angle": 1.0,
+    "nnd": 1.0
+  }
+}

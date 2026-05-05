@@ -1,0 +1,60 @@
+{
+  "statistical_tests": [
+    {
+      "model": "Vicsek",
+      "metric": "Polarization (mean)",
+      "observed": 0.8235226751239662,
+      "target": 0.8196,
+      "delta": 0.003922675123966157,
+      "z": 3.462810093592845,
+      "p": 0.0005345655441026942
+    },
+    {
+      "model": "Pull",
+      "metric": "Polarization (mean)",
+      "observed": 0.05819803121559264,
+      "target": 0.8196,
+      "delta": -0.7614019687844074,
+      "z": -1123.8840087882656,
+      "p": 0.0
+    },
+    {
+      "model": "Vicsek",
+      "metric": "Turning angle std",
+      "observed": 0.5947353404093519,
+      "target": 0.276,
+      "delta": 0.3187353404093519,
+      "z": null,
+      "p": null,
+      "note": "No dist std in JSON; use relative error only"
+    },
+    {
+      "model": "Pull",
+      "metric": "Turning angle std",
+      "observed": 1.9990629561407725,
+      "target": 0.276,
+      "delta": 1.7230629561407724,
+      "z": null,
+      "p": null,
+      "note": "No dist std in JSON; use relative error only"
+    },
+    {
+      "model": "Vicsek",
+      "metric": "NND median",
+      "observed": 2.6055509063882134,
+      "target": 3.893,
+      "delta": -1.2874490936117864,
+      "z": null,
+      "p": null
+    },
+    {
+      "model": "Pull",
+      "metric": "NND median",
+      "observed": 1.3241716967281547,
+      "target": 3.893,
+      "delta": -2.568828303271845,
+      "z": null,
+      "p": null
+    }
+  ]
+}

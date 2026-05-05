@@ -1,0 +1,75 @@
+{
+  "p_star": {
+    "eta_base": 1.4783800315347388,
+    "lambda_pull": 0.5172819789708244,
+    "alpha_aniso": 0.8048699276605749,
+    "mu_responsiveness": 0.5138913440304981,
+    "k_pref": 0.4498909495950655,
+    "r_pref": 3.581330661251836
+  },
+  "in_loop": {
+    "polarization_mean": 0.8982597539328916,
+    "polarization_std_across_seeds": 0.026892225529039346,
+    "turning_angle_std": 0.2759998282738542,
+    "nnd_median": 3.899141513819759,
+    "nnd_mean": 4.1160240776876025
+  },
+  "large_seed": {
+    "polarization_mean": 0.9058494688435635,
+    "polarization_std_across_seeds": 0.018681872643467982,
+    "turning_angle_std": 0.2724956954767014,
+    "nnd_median": 3.9151573946757288,
+    "nnd_mean": 4.132695516832202
+  },
+  "reflective": {
+    "polarization_mean": 0.7515293743636076,
+    "polarization_std_across_seeds": 0.06188275715938091,
+    "turning_angle_std": 0.492802995814686,
+    "nnd_median": 3.468628955661187,
+    "nnd_mean": 3.1513171768919492
+  },
+  "v5_rho_sweep": {
+    "1.00": {
+      "polarization_mean": 0.9112112978084264,
+      "polarization_std_across_seeds": 0.006487667689396182,
+      "turning_angle_std": 0.26729078558830843,
+      "nnd_median": 3.939583717204473,
+      "nnd_mean": 4.172631278611154
+    },
+    "0.50": {
+      "polarization_mean": 0.9300054301481676,
+      "polarization_std_across_seeds": 0.00773323200327475,
+      "turning_angle_std": 0.26423777391369335,
+      "nnd_median": 3.8769190393717627,
+      "nnd_mean": 4.097893230765638
+    },
+    "0.20": {
+      "polarization_mean": 0.9544046887892655,
+      "polarization_std_across_seeds": 0.004975427055713384,
+      "turning_angle_std": 0.2539641047490181,
+      "nnd_median": 3.8889778958836643,
+      "nnd_mean": 4.112802494256333
+    },
+    "0.10": {
+      "polarization_mean": 0.9664548683993086,
+      "polarization_std_across_seeds": 0.0034484237055683454,
+      "turning_angle_std": 0.2436378386558578,
+      "nnd_median": 3.9292384951479002,
+      "nnd_mean": 4.175096534196649
+    },
+    "0.05": {
+      "polarization_mean": 0.8510882133503468,
+      "polarization_std_across_seeds": 0.16574644331723493,
+      "turning_angle_std": 0.29286962081764595,
+      "nnd_median": 3.791563249918975,
+      "nnd_mean": 3.981485916217126
+    }
+  },
+  "field": {
+    "polarization_mean": 0.8196,
+    "polarization_std": 0.0615,
+    "turning_angle_std": 0.276,
+    "nnd_median": 3.893,
+    "nnd_mean": 4.473
+  }
+}

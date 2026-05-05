@@ -1,0 +1,8 @@
+{
+  "anisotropy_index_A_field": -0.0007574531334068985,
+  "n_clips_used": 6,
+  "total_counts": 6863791,
+  "radius_cm": 10.0,
+  "nbins": 50,
+  "note": "A > 0 means more density behind than ahead = forward void"
+}

@@ -1,0 +1,14 @@
+{
+  "anisotropy_index_A": -0.0007574707154118617,
+  "verdict": "isotropic",
+  "n_seeds": 5,
+  "params": {
+    "eta_base": 1.323357252967103,
+    "lambda_pull": 0.17075539904226153,
+    "alpha_aniso": 0.9991292854818603,
+    "mu_responsiveness": 0.5205880693168121,
+    "k_pref": 0.3799070369683152,
+    "r_pref": 3.5708482054450497,
+    "rho_temporal": 0.9518730848956084
+  }
+}

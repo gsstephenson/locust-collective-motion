@@ -1,0 +1,587 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+
+% Helvetica everywhere (sans-serif body + math)
+\usepackage[T1]{fontenc}
+\usepackage[scaled]{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black,
+            citecolor=blue!50!black, urlcolor=blue!50!black}
+
+\title{Alignment, position-based, and hybrid models of locust collective
+motion: a four-metric calibration against field trajectories}
+
+\author{Asher Albrecht \and George Stephenson \\
+Department of Computer Science, University of Colorado Boulder}
+
+\date{CSCI-5423: Biologically Inspired Multi-Agent Systems \\ Spring 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We test which local interaction rule reproduces the collective motion of
+free-ranging locust hopper bands. We simulate the Vicsek alignment model
+\citep{vicsek1995}, a position-based pull model after \citet{sayin2025},
+and a sequence of hybrids that combine forward-weighted alignment,
+anisotropic noise, heading inertia, and a soft preferred-spacing zone. We
+compare each model to the trajectory dataset of \citet{weinburd2024}
+across four metrics: polarization $\Phi$, turning-angle standard deviation,
+nearest-neighbor distance, and a global anisotropy index of the
+body-centered neighbor density. The two baseline models fail in distinct,
+mechanistic ways: Vicsek matches polarization only at unrealistic noise
+levels and produces no spatial structure; the simplified pull model
+collapses to a disordered steady state from any initial condition, for a
+geometric reason that we argue rules out an entire class of instantaneous
+position-based rules. Hand-tuning a hybrid closed some gaps but introduced
+others. We replace hand-tuning with the Covariance Matrix Adaptation
+Evolution Strategy (CMA-ES) \citep{hansen2016}, parallelized across CPU
+cores, and search a six- and seven-dimensional parameter space against a
+weighted relative-error loss. The calibrated six-parameter hybrid (v4)
+matches polarization within 10\%, turning-angle std and nearest-neighbor
+distance within 1\%, and reproduces the field's near-isotropic global
+neighbor structure. A seven-parameter variant adding temporal bearing
+integration (v5) achieves a marginally lower loss but drives the
+integration weight to its no-effect limit, indicating the mechanism is
+unnecessary at the field's measurement scale. The calibrated fit depends
+on periodic boundary conditions; under reflective walls it breaks. Because
+real hopper bands are open systems, we treat the calibrated parameters as
+a successful fit to a particular simulation regime rather than a
+demonstration that this rule structure governs field hopper-band dynamics.
+\end{abstract}
+
+\section{Introduction}
+
+Australian plague locusts (\textit{Chortoicetes terminifera}) form
+hopper bands that march coherently across kilometers of terrain, causing
+agricultural damage at continental scale. Two competing theories of how
+they coordinate have appeared in the literature. The first, originating
+with \citet{vicsek1995} and applied to locusts by \citet{buhl2006},
+proposes that each individual aligns its heading with neighbors inside a
+fixed radius. Order arises from a density-driven phase transition. The
+second, advocated by \citet{sayin2025} on the basis of field, laboratory,
+and virtual-reality experiments with desert locusts (\textit{Schistocerca
+gregaria}), proposes that individuals are attracted to the positions of
+forward neighbors. The interaction is geometric rather than directional,
+and \citet{sayin2025} argue that bearing information is integrated over
+time by a neural ring-attractor circuit, rather than read out
+instantaneously. We test models inspired by both theories against
+\textit{C.~terminifera} trajectory data; the species mismatch is a caveat
+worth noting, although the two species share the gregarious-phase marching
+behavior the theories aim to explain.
+
+These theories make different predictions about the spatial structure of
+the swarm and about the frame-to-frame heading dynamics of individuals.
+Until recently they could not be tested against individual-level field
+data. \citet{weinburd2024} released the first such dataset: roughly 3.3
+million position records and 20{,}000 trajectories from four hopper bands,
+sampled at 25\,Hz. We use this dataset as the ground truth.
+
+We ask which local rule, or which combination of rules, reproduces the
+field measurements. Our contribution is threefold. First, we show that
+both pure alignment and pure pull fail in characteristic ways. The pull
+failure is sharp: starting from perfect alignment ($\Phi = 1$), the model
+collapses to the disordered steady state within a single timestep, which
+we trace to a geometric symmetry argument that applies to any
+instantaneous, reflection-symmetric, position-based rule. Second, we
+show that a hand-tuned hybrid trades one failure for another. Third, we
+replace hand-tuning with derivative-free optimization: CMA-ES searches
+the parameter space against a multi-metric loss and finds a hybrid that
+fits the field on the metrics we tested, under the simulation regime we
+ran. The methodological pivot, from exploring a few parameter
+combinations to optimizing many jointly, is the main practical lesson of
+the work.
+
+\section{Background and related work}
+
+The Vicsek model \citep{vicsek1995} is a minimal self-propelled particle
+system: at each time step, every agent updates its heading to the
+arithmetic mean of neighbor headings inside an interaction radius, plus
+uniform angular noise of width $\eta$. \citet{buhl2006} fit this model to
+laboratory locust experiments and reported a phase transition from
+disorder to coherent marching as density increased. \citet{bazazi2008}
+proposed an alternative mechanism in which cannibalistic interactions
+drive forward motion: locusts in a marching band tend to bite one
+another, and individuals risk being bitten from behind, so contact and
+visual approach from behind elevate the propensity to march.
+Reduction of an individual's capacity to detect rear approach (via
+abdominal denervation) reduces its marching probability. Neither study
+had access to free-ranging field trajectories.
+
+\citet{weinburd2024} computed body-centered neighbor density maps from
+their hopper-band data and observed an asymmetric distribution
+concentrated in the near zone (within roughly 3\,cm of the focal), with
+more density behind the focal than ahead. They argued for directional
+interactions but stopped short of a specific mechanistic model.
+
+\citet{sayin2025} fit a position-based model to field, laboratory, and
+virtual-reality experiments. In their pull formulation, each agent steers
+toward a weighted centroid of forward neighbors, with weights proportional
+to $\cos^2(\beta/2)$ for relative bearing $\beta$. They argued that
+bearing information is integrated over time by a neural ring-attractor
+circuit and that this temporal integration is necessary for the mechanism
+to produce coherent motion. Our v5 hybrid (Section~\ref{sec:methods})
+incorporates this temporal-integration component to test whether it is
+required to fit the Weinburd data.
+
+The Couzin model \citep{couzin2002} combines repulsion, alignment, and
+attraction in nested zones. We borrow the soft preferred-spacing idea
+from this literature for our hybrid extensions.
+
+CMA-ES \citep{hansen2016} is a derivative-free evolutionary optimizer
+that adapts a multivariate Gaussian sampling distribution as it explores.
+It is well suited to noisy black-box objectives in low-dimensional
+continuous spaces. We use the \texttt{pycma} implementation
+\citep{pycma}.
+
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Field metrics}
+
+We compute four metrics from the Weinburd dataset and apply the same
+functions to every simulated trajectory:
+
+\begin{enumerate}
+\item Global polarization $\Phi(t) = \left| \frac{1}{N(t)} \sum_i
+  e^{i\theta_i(t)} \right|$, averaged over time after burn-in.
+\item Turning-angle standard deviation: per-step heading change
+  $\Delta\theta_i(t) = \theta_i(t+1) - \theta_i(t)$, wrapped to
+  $[-\pi, \pi]$, pooled across agents and time.
+\item Median nearest-neighbor distance (NND).
+\item Body-centered neighbor density. For each focal individual we
+  rotate the relative position of every neighbor inside a 10\,cm radius
+  into the focal's body frame (heading along $+y$) and accumulate a
+  $50 \times 50$ histogram. Figure~\ref{fig:fig1} shows the field
+  distribution.
+\end{enumerate}
+
+From the density map we derive a scalar global anisotropy index
+$A = (\rho_\text{rear} - \rho_\text{front}) / (\rho_\text{rear} +
+\rho_\text{front})$, where $\rho_\text{rear}$ and $\rho_\text{front}$ are
+the mean densities in the lower and upper halves of the body-centered
+histogram. By this convention $A > 0$ indicates more density behind the
+focal than ahead, consistent with the qualitative direction reported by
+\citet{weinburd2024}.
+
+We emphasize at the outset that $A$ is a coarse \emph{global} summary,
+averaging over the full half-disk out to a 10\,cm radius. The anisotropy
+that \citet{weinburd2024} report is concentrated in the near zone (within
+$\sim 3$\,cm), so a near-isotropic value of $A$ at the global scale is
+\emph{compatible with} a non-trivial near-zone signal that this metric
+does not resolve. We treat $A$ as a necessary-but-not-sufficient field
+match: a model with the wrong sign or magnitude of $A$ would clearly
+disagree with the field, but a model whose $A$ matches the field at zero
+has not been shown to reproduce near-zone structure. We return to this
+point in Section~\ref{sec:spatial}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.55\linewidth]{figures/fig1_field_density.png}
+\caption{Body-centered neighbor density from the \citet{weinburd2024}
+hopper-band dataset, walking and hopping individuals combined (six clips,
+$6.86 \times 10^6$ neighbor counts). The focal heads up. The distribution
+is close to isotropic at the global level
+($A_\text{field} = -0.0008$), with a self-exclusion hole at the origin
+and a near-zone anisotropy concentrated within $\sim 3$\,cm of the focal
+that the global $A$ index does not resolve. We use this map and its
+scalar summary as a fourth field-fitting target alongside the three
+scalar metrics, with the caveat noted in the text.}
+\label{fig:fig1}
+\end{figure}
+
+\subsection{Models}
+
+The Vicsek model implements standard alignment dynamics with periodic
+boundaries. Each agent sets its next heading to
+$\theta_i(t{+}1) = \arg\!\sum_{j \in \mathcal{N}_i}
+e^{i\theta_j} + \eta \xi_i$, where $\mathcal{N}_i$ is the set of
+neighbors within $r_\text{int} = 7\,$cm and $\xi_i \sim
+\mathcal{U}(-1/2, 1/2)$. Speed is constant and a hard repulsion override
+applies at $r_\text{rep} = 1.5\,$cm.
+
+The pull model has each agent steer toward the centroid of forward
+neighbors weighted by $w(\beta) = \cos^2(\beta/2)$, following
+\citet{sayin2025}, but \emph{without} the temporal-integration component.
+The noise term and the repulsion override match the Vicsek
+implementation. We test this simplified per-frame version explicitly to
+isolate the effect of temporal integration; v5 below restores it.
+
+Hybrid v3 (anisotropic Vicsek) extends the alignment rule along two
+axes. Forward neighbors (relative bearing $|\beta| < \pi/3$) get weight
+$1 + \alpha_\text{aniso}$ and rear neighbors $1 - \alpha_\text{aniso}$.
+Effective noise scales with the fraction of neighbors ahead:
+$\eta_\text{eff}(i) = \eta_\text{base} (1 - \lambda f_\text{forward}(i))$.
+Speed varies with local order between $v_\text{min} = 2.7\,$cm/s and
+$v_\text{max} = 11.76\,$cm/s.
+
+Hybrid v4 adds two mechanisms motivated by the v3 failure analysis
+(Section~\ref{sec:results}). The heading-inertia term has each agent
+commit a fraction $\mu \in (0, 1]$ of the way to its new desired
+heading $\theta^*$ via exponential smoothing in unit-vector space:
+$\theta_{i}(t{+}1) = \arg\!\left[(1{-}\mu) e^{i\theta_i(t)} + \mu
+e^{i\theta^*}\right]$. This narrows the per-step turning distribution.
+The preferred-spacing zone applies in the band $r_\text{rep} < d <
+r_\text{pref}$: the agent mixes a radial-push direction into its
+desired heading with weight $k_\text{pref}$.
+
+Hybrid v5 adds temporal bearing integration after \citet{sayin2025}'s
+ring-attractor analogy. Each agent maintains an exponential moving
+average of the alignment-derived target unit vector, $T_\text{ema}
+\leftarrow (1-\rho) T_\text{ema} + \rho T_\text{instantaneous}$. The
+desired heading derives from $T_\text{ema}$ rather than the
+instantaneous target. Setting $\rho = 1$ disables the integrator and
+recovers v4.
+
+\subsection{Calibration}
+
+We calibrate the hybrid models with CMA-ES against a weighted relative-error
+loss
+\begin{align}
+L = w_\Phi \frac{|\Phi_\text{sim} - \Phi_\text{field}|}{\Phi_\text{field}}
+  + w_\sigma \frac{|\sigma_\text{sim} - \sigma_\text{field}|}{\sigma_\text{field}}
+  + w_\text{NND} \frac{|\text{NND}_\text{sim} - \text{NND}_\text{field}|}{\text{NND}_\text{field}},
+\end{align}
+with weights $w_\Phi = 1$, $w_\sigma = w_\text{NND} = 2$. The two
+failure-mode metrics from the baseline experiments
+(Section~\ref{sec:results}) get double weight; polarization is already
+close in v3. This weighting is an experimenter choice that shapes the
+result. A different weighting would yield a different best fit, and the
+$\sim$10\% polarization gap we report below is a direct consequence of
+this choice (Section~\ref{sec:cma}). Each evaluation runs five seeds of
+a 2000-step simulation with 500-step burn-in and returns the ensemble
+mean.
+
+The optimization parameter space is six-dimensional for v4 and
+seven-dimensional for v5: $\eta_\text{base} \in [0.1, 1.5]$,
+$\lambda \in [0, 1]$, $\alpha_\text{aniso} \in [0, 1]$,
+$\mu \in [0.1, 1.0]$, $k_\text{pref} \in [0, 0.7]$,
+$r_\text{pref} \in [1.6, 5.0]$\,cm, and (v5 only)
+$\rho_\text{temporal} \in [0.05, 1.0]$. Following the \texttt{pycma}
+guidance \citep{pycma}, we map every parameter linearly to the internal
+range $[0, 10]$ so a single $\sigma_0$ has uniform meaning across
+dimensions.
+
+We run CMA-ES with population size 20, $\sigma_0 = 2.0$, and 40--50
+generations. The 20 candidate evaluations within each generation are
+distributed across CPU cores using \texttt{multiprocessing.Pool}; BLAS
+threading inside workers is pinned to one to avoid oversubscription. On
+a 32-thread Intel i9-13900K the full v4 optimization completes in
+about 13 minutes (gen$_0$ in 19 seconds, end-to-end speedup of about
+$11{\times}$ over the serial implementation).
+
+\section{Results}
+\label{sec:results}
+
+\subsection{The two baselines fail in distinct ways}
+
+After calibrating $\eta$ to match field polarization, the Vicsek model
+hits $\Phi = 0.824$ (target 0.820) but produces a turning-angle
+distribution more than twice as wide as the field
+(0.595\,rad vs 0.276\,rad, 116\% relative error) and undercounts NND by
+33\%. The model achieves order, but at the cost of pathological
+heading noise that compensates for the absence of any heading-stabilizing
+mechanism beyond raw alignment.
+
+The pull model fails differently, and more sharply. Across five
+structural variants (varying cone half-angle from $45^\circ$ to
+$180^\circ$, pull strength from 0.1 to 150, and noise from 0.1 to
+2.9\,rad), polarization remained at $\Phi \approx 0.06$ in every case,
+with a turning-angle distribution near $2\,$rad (essentially saturated).
+The failure is not a tuning failure: it persists across the entire
+parameter sweep we tested.
+
+The failure is also not a bootstrapping failure. Initialized from
+perfect order ($\Phi_0 = 1.000$, headings drawn with std $0.01\,$rad
+across five seeds), polarization drops 96\% within a single timestep
+and converges to the same disordered steady state as random
+initialization (mean $0.0372$ vs $0.0373$, both with seed std $\lesssim
+10^{-3}$). The model destroys existing order; it does not merely fail to
+generate it.
+
+The cause is geometric. In a disordered swarm, neighbor bearings are
+approximately uniformly distributed around the focal individual. The
+forward-weighting function $\cos^2(\beta/2)$ is symmetric under the
+reflection $\beta \to -\beta$. Any rule whose weighting is symmetric
+under that reflection produces, in expectation over an isotropic bearing
+distribution, zero net lateral steering signal. The forward component
+is non-zero, so each agent maintains its current heading; but there is
+no mechanism to bias the population toward a common direction. Small
+stochastic deviations from isotropy provide a finite-$N$ signal in
+principle, but heading noise randomizes each agent's direction faster
+than these deviations can accumulate into coherent motion. The result is
+a steady state at $\Phi \approx 0.037$ that closely matches the
+finite-$N$ baseline expected for $N=150$ agents moving independently
+with no effective coupling.
+
+This argument rules out an entire class of instantaneous,
+reflection-symmetric, position-based steering rules as candidate
+mechanisms for sustaining order in a disordered swarm. It does not rule
+out the full \citet{sayin2025} proposal, which adds temporal integration
+via a ring-attractor circuit. The argument is in fact consistent with
+their emphasis on the ring attractor: temporal integration is what
+their formulation requires precisely because the per-frame steering rule
+on its own cannot do the work. Hybrid v5 (Section~\ref{sec:cma}) tests
+whether adding temporal integration to a hybrid alignment-plus-pull
+model improves the fit to the Weinburd data.
+
+Hybrid v3 (anisotropic Vicsek with hand-tuned $\eta = 1.1$, $\lambda =
+0.8$, $\alpha = 0.6$) hits polarization within 0.5\% but still misses
+turning-angle std by 88\% and NND by 45\%. Forward weighting tightens
+the alignment, which lowers $\eta$ enough to bring polarization in at a
+sensible noise level, but introduces no mechanism that limits per-step
+heading change or sets a preferred spacing.
+
+\subsection{CMA-ES closes the scalar gaps}
+\label{sec:cma}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig2_cma_convergence.png}
+\caption{CMA-ES convergence curves. Both v4 (six-dimensional) and v5
+(seven-dimensional) reduce the weighted loss by an order of magnitude over
+40--50 generations. The v5 run plateaus around generation 25 before a late
+breakout finds a slightly better basin.}
+\label{fig:fig2}
+\end{figure}
+
+Figure~\ref{fig:fig2} shows the loss trajectories. The v4 run reaches a
+final loss of 0.099. The calibrated ensemble means are
+$\Phi = 0.898$ (9.6\% above the field target), $\sigma = 0.276$\,rad,
+and NND median $= 3.90$\,cm. The two failure modes that motivated
+heading inertia and preferred spacing close to within seed-to-seed
+variation: the seed std on $\sigma$ is approximately $0.005$\,rad
+(roughly 2\% of the field value) and on NND is approximately $0.04$\,cm
+(roughly 1\% of the field value). We deliberately do not report
+percentage errors smaller than seed noise, since the optimizer's internal
+metric precision exceeds the meaningful resolution of an ensemble mean.
+Polarization remains slightly elevated above the field target.
+
+The 9.6\% polarization residual is the direct consequence of our
+weighting choice: with $w_\Phi = 1$ and $w_\sigma = w_\text{NND} = 2$,
+the optimizer is willing to trade polarization accuracy for the other
+two metrics. We did not systematically explore the weighting trade-off,
+but a configuration with $w_\Phi$ raised would close that gap at the
+cost of one of the others.
+
+The v5 run reaches a final loss of 0.085, but the converged
+$\rho_\text{temporal} = 0.95$ is at the no-effect end of its allowed
+range (recall $\rho = 1$ disables the integrator). The improvement
+over v4 comes from the optimizer escaping a 6-D local minimum into a
+different basin, not from using the new mechanism. Specifically,
+$\alpha_\text{aniso}$ saturates at 1.0 and $\lambda$ drops to 0.17,
+while the other parameters move only slightly. We treat the v5 result
+as evidence that temporal bearing integration is unnecessary to fit the
+\citet{weinburd2024} measurements at the granularity we use, not that
+it is mechanistically wrong. Section~\ref{sec:discussion} returns to
+this point.
+
+Figure~\ref{fig:fig3} summarizes per-metric performance for every model
+we ran. Numerical values are listed in Table~\ref{tab:scorecard}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig3_scorecard.png}
+\caption{Field-fit scorecard across all models. Dashed lines indicate
+field targets. Vicsek and Pull miss multiple metrics. Hybrid v3 closes
+polarization but not the others. CMA-ES-calibrated v4 and v5 hit all
+three scalar targets within seed noise (under periodic boundary
+conditions, see Section~\ref{sec:boundary}).}
+\label{fig:fig3}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Field-fit scorecard. Relative error in parentheses. Field targets:
+$\Phi = 0.820$, $\sigma = 0.276$\,rad, NND $= 3.893$\,cm. All hybrid
+results are under periodic boundary conditions; see
+Section~\ref{sec:boundary} for the reflective-wall stress test. The
+errors on $\sigma$ and NND for the calibrated hybrids fall below the
+seed-to-seed standard deviation; we report them for completeness but do
+not interpret sub-seed-noise residuals.}
+\label{tab:scorecard}
+\begin{tabular}{lrrr}
+\toprule
+Model       & $\Phi$               & $\sigma$ (rad)     & NND (cm)              \\
+\midrule
+Vicsek      & 0.824 (0.5\%)        & 0.595 (116\%)      & 2.61 (33\%)           \\
+Pull        & 0.058 (93\%)         & 1.999 (624\%)      & 1.32 (66\%)           \\
+Hybrid v3   & 0.890 (8.5\%)        & 0.520 (88\%)       & 2.15 (45\%)           \\
+Hybrid v4   & 0.898 (9.6\%)        & 0.276 ($<$1\%)     & 3.90 ($<$1\%)         \\
+Hybrid v5   & 0.889 (8.4\%)        & 0.276 ($<$1\%)     & 3.89 ($<$1\%)         \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Spatial structure: a near-isotropic global match}
+\label{sec:spatial}
+
+The body-centered neighbor density map is the test that motivated the
+hybrid extensions in the first place. \citet{weinburd2024} reported
+anisotropic neighbor distributions in their data, and our hybrid v3
+appeared to reproduce a visible asymmetry in the inner ring of its
+density map.
+
+A quantitative check tells a more nuanced story. Figure~\ref{fig:fig4}
+shows the field, hybrid v3, and CMA-ES-calibrated hybrid v5 maps side by
+side, each with its global anisotropy index $A$. All three are within
+$|A| < 0.001$ of zero. The visible asymmetry in the v3 map is a
+near-zone effect (within $\sim 3$\,cm of the focal) that washes out when
+averaged over the full half-disk. The same is true of the field: the
+\citet{weinburd2024} anisotropy is concentrated in the near zone, and
+the global $A$ index does not resolve it.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig4_spatial_check.png}
+\caption{Body-centered neighbor density for the field, hybrid v3, and
+CMA-ES-calibrated hybrid v5. The global anisotropy index is within
+$|A| < 0.001$ of zero in all three cases. Match on this metric is a
+necessary but not sufficient condition for reproducing the field's
+spatial structure: it confirms the absence of large-scale front/rear
+asymmetry but does not establish that the calibrated model captures the
+near-zone anisotropy reported by \citet{weinburd2024}.}
+\label{fig:fig4}
+\end{figure}
+
+The implication is that the calibrated v4 and v5 hybrids match the
+field on the global $A$ index, but this match should not be read as
+strong evidence of spatial-structure agreement. Both the field and the
+calibrated models produce near-isotropic distributions at the global
+scale; the test does not discriminate between them. The original "void
+emerges" claim attached to v3, made on visual evidence from individual
+density-map panels, was an overinterpretation: the visible asymmetry
+was a near-zone effect rather than a global signature, and we did not
+have a quantitative near-zone metric in place at the time. A fair test
+of whether any of these models reproduces the
+\citet{weinburd2024} near-zone anisotropy requires a radially-resolved
+or near-zone-restricted anisotropy index, which we leave for future work.
+
+\subsection{Boundary-condition dependence}
+\label{sec:boundary}
+
+We tested the calibrated v4 model under reflective walls instead of
+periodic boundaries, holding all other parameters fixed. The fit broke:
+turning-angle std jumped to 0.493\,rad (78\% off) and NND dropped to
+3.47\,cm (11\% off). Polarization moved closer to target, from 0.898 to
+0.752 (8.3\% off). The periodic image structure is doing real physical
+work in the calibration. Reflective walls perturb headings on contact,
+inflating the per-step turning distribution, and they compress densities
+away from the boundary, lowering NND.
+
+This is a substantive limitation, not a footnote. Real hopper bands are
+open systems with front and rear asymmetry, not periodic boxes.
+The calibrated parameters in Table~\ref{tab:scorecard} are conditional
+on a boundary regime that does not match the system we are modeling. The
+same hybrid mechanism, calibrated under different boundary conditions,
+would converge on different parameters and almost certainly different
+fits. We have demonstrated that with six free parameters, CMA-ES can
+match the Weinburd scalar metrics under periodic boundaries; we have
+\emph{not} demonstrated that this rule structure governs the dynamics
+of free-ranging locust hopper bands. Establishing that would require
+calibration under realistic open-boundary conditions, which we did not
+have time to implement. We discuss possible approaches in
+Section~\ref{sec:discussion}.
+
+\section{Discussion}
+\label{sec:discussion}
+
+The pull-model failure result and its geometric explanation stand
+independently of the calibration story. They establish that no
+instantaneous, reflection-symmetric, position-based steering rule can
+sustain order in a disordered swarm, regardless of cone angle, pull
+strength, or noise level, and they point directly at temporal integration
+(or some other symmetry-breaking mechanism) as the missing ingredient.
+This is consistent with \citet{sayin2025}'s mechanistic emphasis on the
+ring-attractor circuit, and it tightens the claim: the ring attractor
+is not just one possible implementation of pull dynamics but a
+computationally necessary component of any pull-class mechanism that
+generates order.
+
+We spent several weeks hand-tuning a hybrid model and producing
+scorecards that captured one metric well at a time. CMA-ES, with parallel
+evaluation across cores, runs end-to-end in about 13 minutes and finds
+parameter combinations that hand-tuning missed. For noisy black-box
+objectives in this dimensionality, derivative-free evolutionary search
+is the right default. We should have used it sooner.
+
+Adding temporal bearing integration ($\rho_\text{temporal}$) gave the
+optimizer a seventh degree of freedom that it chose not to use. The
+mechanism is not wrong in principle. Its geometrically established
+necessity (Section~\ref{sec:results}) for any pure pull-class model
+remains. What our v5 result shows is narrower: at the granularity of the
+\citet{weinburd2024} dataset, and within an alignment-dominated hybrid
+that already breaks reflection symmetry through forward-weighted
+coupling, the additional temporal-integration term is unnecessary to
+match the four metrics we measure. A measurement that distinguishes
+instantaneous from time-integrated bearing estimation would be needed
+to test the ring-attractor mechanism directly; our metrics do not.
+
+The remaining gap is polarization. The v4 and v5 calibrations sit at
+$\Phi \approx 0.89$ versus a field target of $0.82$. As noted in
+Section~\ref{sec:cma}, this is a direct consequence of our weighting
+choice. Increasing $w_\Phi$ would close it at the cost of one of the
+others.
+
+The v3 anisotropy reframing in Section~\ref{sec:spatial} is the most
+significant correction relative to our earlier work on this problem. The
+visible v3 asymmetry that motivated the hybrid extensions was real but
+near-zone; our global $A$ index did not capture it; and the v4 and v5
+matches on $A$ are matches at zero rather than matches on a structured
+signal. The calibration story holds for the three scalar metrics; the
+spatial-structure claim is weaker than we initially thought. A
+near-zone or radially-resolved anisotropy metric is the obvious next
+test.
+
+We have not run an open-boundary calibration. The reflective-wall
+stress test indicates the trade-offs differ. Three plausible follow-ups
+are: a flux-boundary scheme that despawns leaving agents and respawns
+at the rear; calibration under reflective walls with the loss
+reweighted; or a sliding-window simulation centered on the swarm
+centroid. Of these, we think the sliding-window approach is most
+defensible because it reproduces the actual measurement geometry of the
+\citet{weinburd2024} field recordings, but we did not have time to
+implement any.
+
+\section{Project contributions}
+
+\textbf{Asher Albrecht} built the field-data ingestion pipeline from the
+\citet{weinburd2024} \texttt{.mat} files, computed the four baseline
+metrics on the field data (Section 3.1), implemented the Vicsek and Pull
+baseline models, ran the pull-model order-destruction experiment and
+geometric analysis (Section~\ref{sec:results}), and led the hybrid v3
+anisotropic-Vicsek design and the $\eta$/$\lambda$ parameter sweep
+figures.
+
+\textbf{George Stephenson} extended the hybrid model with heading inertia,
+preferred spacing, and temporal bearing integration (v4 and v5 in
+\texttt{hybrid\_v4.py} and \texttt{hybrid\_v5.py}), built the parallel
+CMA-ES calibration framework (\texttt{calibrate\_cma.py},
+\texttt{calibrate\_cma\_v5.py}, \texttt{validate\_calibrated.py}),
+implemented the spatial-anisotropy validation against the field density
+map, and produced the post-calibration figures.
+
+Both authors contributed to the experimental design, the slide deck,
+and this paper.
+
+\section*{Code and data}
+
+The simulation code, calibration scripts, CMA-ES log files, and figure
+generators are at \url{https://github.com/}\textit{(repo to be added on
+submission)}. The Weinburd dataset is available from the original
+authors at \citet{weinburd2024}.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

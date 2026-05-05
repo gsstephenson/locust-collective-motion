@@ -1,0 +1,35 @@
+{
+  "hybrid": {
+    "n_agents": 150,
+    "Lx": 99.44857450176137,
+    "Ly": 55.93982315724077,
+    "v_min": 2.7,
+    "v_max": 11.76,
+    "speed": 8.385663230346026,
+    "eta_base": 1.1000000000000003,
+    "lambda_pull": 0.8,
+    "alpha_aniso": 0.6,
+    "cone_half_angle": 1.0471975511965976,
+    "eta_empirical": 0.26,
+    "eta_calibrated": 1.1000000000000003,
+    "r_interaction": 7.0,
+    "r_repulsion": 1.5,
+    "dt": 0.04,
+    "n_steps": 2000,
+    "burn_in": 500
+  },
+  "metrics": {
+    "polarization_mean": 0.8187250304042348,
+    "polarization_std": 0.047824978416841205,
+    "turning_angle_std": 0.8703039844504682,
+    "nnd_median": 1.7524440021384549,
+    "nnd_mean": 1.8502405845380245
+  },
+  "field_targets": {
+    "polarization_mean": 0.8196,
+    "polarization_std": 0.0615,
+    "turning_angle_std": 0.276,
+    "nnd_median": 3.893,
+    "nnd_mean": 4.473
+  }
+}
